@@ -5,4 +5,4 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Stores all the API keys
-steam_key = os.getenv('STEAM_API_KEY')
+STEAM_KEY = os.getenv('STEAM_API_KEY')
