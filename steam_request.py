@@ -4,7 +4,10 @@ from api_key_handling import STEAM_KEY
 # Parses a steam link to get the game's app_id
 def parse_app_id(url):
     app_id = url.split('/')[4]
-    return app_id
+    if app_id.isdigit():
+        return app_id
+    else:
+        return None
 
 # Calls the steam api to get a list up to 50000 game requests
 def get_multiple_games(max_results):
@@ -30,4 +33,16 @@ def get_multiple_games(max_results):
 def get_game_by_app_id(app_id):
     game_api = f'https://store.steampowered.com/api/appdetails?appids={app_id}'
     response = requests.get(game_api)
-    return {'app_id': app_id, 'data': response.json()}
+
+    # Check if request was successful
+    if response.status_code == 200:
+        try:
+            return response.json()
+
+        # Default error case
+        except:
+            return None
+    
+    else:
+        return None
+    
