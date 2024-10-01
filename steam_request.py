@@ -27,8 +27,7 @@ def get_multiple_games(max_results):
     response = requests.get(steam_api, params=params)
     return response.json()
 
-def get_game_by_url(url):
-    app_id = parse_app_id(url)
+def get_game_by_app_id(app_id):
     game_api = f'https://store.steampowered.com/api/appdetails?appids={app_id}'
     response = requests.get(game_api)
     return {'app_id': app_id, 'data': response.json()}

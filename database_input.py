@@ -1,7 +1,7 @@
 import psycopg2
 from psycopg2 import sql
 from api_key_handling import PSQL_PASSWORD
-from steam_request import get_multiple_games, get_game_by_url
+from steam_request import parse_app_id, get_multiple_games, get_game_by_app_id
 
 
 # Parses game json to get name and description
@@ -43,7 +43,24 @@ def load_game(cursor, app_id, name, description):
 
 # Handles loading multiple games into the database
 def commit_multiple_games(max_results):
-    data = get_multiple_games(max_results)
+    # Starts connection to the database
+    connection = psycopg2.connect(database="game_data_storage",
+                            host="localhost",
+                            user="nathan",
+                            password=PSQL_PASSWORD,
+                            port="5432")
+
+    cursor = connection.cursor()
+
+    # Gets the max_results of games and then loads the cursor with each Game table entry
+    games = get_multiple_games(max_results)['response']['apps']
+    for game in games:
+        get_game_by_app_id(game['appid'])
+
+    # Commits changes and closes the database connection
+    connection.commit()
+    cursor.close()
+    connection.close()
 
 
 # Handles loading a game into the database by url
