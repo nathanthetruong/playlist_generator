@@ -1,14 +1,7 @@
 import psycopg2
 from psycopg2 import sql
 from api_key_handling import PSQL_PASSWORD
-
-connection = psycopg2.connect(database="game_data_storage",
-                        host="localhost",
-                        user="nathan",
-                        password=PSQL_PASSWORD,
-                        port="5432")
-
-cursor = connection.cursor()
+from steam_request import get_multiple_games, get_game_by_url
 
 
 # Parses game json to get name and description
@@ -19,24 +12,57 @@ def parse_game_json(app_id, game_data):
     return {'name': name, 'description': description}
 
 
-# Loads game into the database
+# Loads game into the cursor to later commit
 def load_game(cursor, app_id, name, description):
     try:
-        insert_query = sql.SQL("""
-            INSERT INTO Game (app_id, name, description)
-            VALUES (%s, %s, %s)
-        """)
-        cursor.execute(insert_query, app_id, name, description)
-    
-    # Case where game is already in the Game table
-    except psycopg2.IntegrityError:
-        print(f"database_input.py: load_game -> Game with app_id {app_id} already exists")
+        # Used to see if this game is already in the database
+        cursor.execute(sql.SQL("SELECT COUNT(*) FROM Game WHERE app_id = %s"), (app_id,))
+        count = cursor.fetchone()[0]
+
+        # Game is already in the database
+        if int(count) > 0:
+            update_query = sql.SQL("""
+                UPDATE Game
+                SET name = %s, description = %s
+                WHERE app_id = %s
+            """)
+            cursor.execute(update_query, (name, description, app_id))
+            
+        # Game isn't in the database yet
+        else:
+            insert_query = sql.SQL("""
+                INSERT INTO Game (app_id, name, description)
+                VALUES (%s, %s, %s)
+            """)
+            cursor.execute(insert_query, (app_id, name, description))
 
     # Default error case
     except Exception as e:
         print(f"database_input.py: load_game -> {e}")
 
-# Commits changes and closes the database connection
-connection.commit()
-cursor.close()
-connection.close()
+
+# Handles loading multiple games into the database
+def commit_multiple_games(max_results):
+    data = get_multiple_games(max_results)
+
+
+# Handles loading a game into the database by url
+def commit_game_by_url(url):
+    # Starts connection to the database
+    connection = psycopg2.connect(database="game_data_storage",
+                            host="localhost",
+                            user="nathan",
+                            password=PSQL_PASSWORD,
+                            port="5432")
+
+    cursor = connection.cursor()
+
+    # Handles loading the cursor with the Game table entry
+    response = get_game_by_url(url)
+    data = parse_game_json(response['app_id'], response['data'])
+    load_game(cursor, response['app_id'], data['name'], data['description'])
+
+    # Commits changes and closes the database connection
+    connection.commit()
+    cursor.close()
+    connection.close()
