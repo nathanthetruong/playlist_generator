@@ -1,7 +1,7 @@
 import psycopg2
 from psycopg2 import sql
 from api_key_handling import PSQL_PASSWORD
-from steam_request import parse_app_id, get_multiple_games, get_game_by_app_id
+from steam_request import parse_app_id, get_game_by_app_id
 
 
 # Credentials for connecting to database
@@ -39,31 +39,11 @@ def load_game(cursor, app_id, name, description):
                 description = EXCLUDED.description
         """)
         cursor.execute(insert_query, (app_id, name, description))
+        print("Game Loaded into the Database")
 
     # Default error case
     except Exception as e:
         print(f"database_input.py: load_game -> {e}")
-
-
-# Handles loading multiple games into the database
-def commit_multiple_games(max_results):
-    # Starts connection to the database
-    cursor = connection.cursor()
-
-    # Gets the max_results of games and then loads the cursor with each Game table entry
-    games = get_multiple_games(max_results)['response']['apps']
-    for game in games:
-        if game['appid'] != None:
-            response = get_game_by_app_id(game['appid'])
-            if response != None:
-                game_data = parse_game_json(str(game['appid']), response)
-                if game_data['name'] != None and game_data['description'] != None:
-                    load_game(cursor, game['appid'], game_data['name'], game_data['description'])
-
-    # Commits changes and closes the database connection
-    connection.commit()
-    cursor.close()
-    connection.close()
 
 
 # Handles loading a game into the database by url
@@ -90,3 +70,26 @@ def commit_game_by_url(url):
     connection.commit()
     cursor.close()
     connection.close()
+
+
+# DEPRECATED CODE
+
+# # Handles loading multiple games into the database
+# def commit_all_games():
+#     # Starts connection to the database
+#     cursor = connection.cursor()
+
+#     # Gets the max_results of games and then loads the cursor with each Game table entry
+#     games = get_all_games()['applist']['apps']
+#     for game in games:
+#         if game['appid'] != None:
+#             response = get_game_by_app_id(game['appid'])
+#             if response != None:
+#                 game_data = parse_game_json(str(game['appid']), response)
+#                 if game_data['name'] != None and game_data['description'] != None:
+#                     load_game(cursor, game['appid'], game_data['name'], game_data['description'])
+
+#     # Commits changes and closes the database connection
+#     connection.commit()
+#     cursor.close()
+#     connection.close()

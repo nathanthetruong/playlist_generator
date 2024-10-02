@@ -12,8 +12,7 @@ cursor = connection.cursor()
 # Creates Game database table
 create_table_query = """
 CREATE TABLE IF NOT EXISTS Game (
-    game_id SERIAL PRIMARY KEY,
-    app_id INTEGER NOT NULL,
+    app_id INTEGER PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT NOT NULL
     );
